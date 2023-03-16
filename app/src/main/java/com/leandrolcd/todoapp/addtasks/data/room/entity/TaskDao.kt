@@ -1,8 +1,6 @@
 package com.leandrolcd.todoapp.addtasks.data.room.entity
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.Query
+import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -11,5 +9,11 @@ interface TaskDao {
     fun getAllTasks():Flow<List<TaskEntity>>
 
     @Insert
-    suspend fun AddTask(item: TaskEntity)
+    suspend fun addTask(item: TaskEntity)
+
+
+    @Update
+    suspend fun upDateTask(item: TaskEntity)
+    @Delete
+    abstract fun deleteTask(taskEntity: TaskEntity)
 }

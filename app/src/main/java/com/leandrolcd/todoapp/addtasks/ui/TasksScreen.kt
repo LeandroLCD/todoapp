@@ -16,60 +16,90 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.leandrolcd.todoapp.addtasks.ui.TasksUiState.*
 import com.leandrolcd.todoapp.addtasks.ui.model.TaskModel
 
 @Composable
 fun TasksScreen(tasksViewModel: TasksViewModel) {
-    val showDialog: Boolean by tasksViewModel.showDialog.observeAsState(false)
 
-    Box(Modifier.fillMaxSize()) {
-        AddTasksDialog(
-            showDialog,
-            onDismiss = { tasksViewModel.onCloseDialog() },
-            onTaskAdd = { tasksViewModel.onTaskCrete(it) })
-        FabDialog(
-            tasksViewModel,
-            Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        )
-        TasksList(tasksViewModel, Modifier.fillMaxWidth())
+    val showDialog: Boolean by tasksViewModel.showDialog.observeAsState(false)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+
+    val uiState by produceState<TasksUiState>(
+        initialValue = Loading,
+        key1 = lifecycle,
+        key2 = tasksViewModel) {
+        lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED){
+            tasksViewModel.uiState.collect{value = it}
+        }
+    }
+
+    when(uiState){
+        is Error -> {
+
+        }
+        Loading -> {
+            CircularProgressIndicator()
+        }
+        is Success -> {
+            Box(Modifier.fillMaxSize()) {
+                AddTasksDialog(
+                    showDialog,
+                    onDismiss = { tasksViewModel.onCloseDialog() },
+                    onTaskAdd = { tasksViewModel.onTaskCrete(it) })
+                FabDialog(
+                    tasksViewModel,
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                )
+                val list = (uiState as Success).tasks
+                TasksList( list,tasksViewModel)
+
+            }
+        }
 
     }
+
 }
 
 @Composable
-fun TasksList(viewModel: TasksViewModel, modifier: Modifier) {
-    val myList: List<TaskModel> = viewModel.taskList
+fun TasksList(list: List<TaskModel>, viewModel: TasksViewModel) {
+
     LazyColumn() {
-        items(myList, key = {myList.indexOf(it)}){
-            ItemTask(item = it, viewModel = viewModel)
+        items(list, key = { it.id }) {
+           ItemTask(item = it, viewModel = viewModel)
         }
     }
 }
 
 
 @Composable
-fun ItemTask(item:TaskModel, viewModel: TasksViewModel) {
+fun ItemTask(item: TaskModel, viewModel: TasksViewModel) {
     Card(
         Modifier
-            .fillMaxWidth().pointerInput(Unit){
-                detectTapGestures (onLongPress = {
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectTapGestures(onLongPress = {
                     viewModel.onRemoveIteM(item)
                 })
             }
-            .padding(horizontal = 16.dp, vertical = 8.dp), 
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         elevation = 8.dp) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(text = item.task, modifier = Modifier
-                .padding(horizontal = 4.dp)
-                .weight(1f))
-            Checkbox(checked = item.selected, onCheckedChange = {viewModel.onItemChanged(item)})
+            Text(
+                text = item.task, modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .weight(1f)
+            )
+            Checkbox(checked = item.selected, onCheckedChange = { viewModel.onItemChanged(item) })
         }
     }
 }
@@ -120,7 +150,7 @@ fun AddTasksDialog(show: Boolean, onDismiss: () -> Unit, onTaskAdd: (String) -> 
                     onClick = {
                         onTaskAdd(myTask)
                         myTask = ""
-                              },
+                    },
                     modifier = Modifier
                         .align(Alignment.End)
                         .padding(horizontal = 8.dp)
