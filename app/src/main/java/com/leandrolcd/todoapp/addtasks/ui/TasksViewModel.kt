@@ -9,6 +9,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.leandrolcd.todoapp.addtasks.domain.AddTaskUseCase
+import com.leandrolcd.todoapp.addtasks.domain.DeleteTaskUseCase
 import com.leandrolcd.todoapp.addtasks.domain.GetTaskUseCase
 import com.leandrolcd.todoapp.addtasks.domain.UpdateTaskUseCase
 import com.leandrolcd.todoapp.addtasks.ui.TasksUiState.*
@@ -22,8 +23,9 @@ import kotlin.reflect.KFunction1
 @HiltViewModel
 class TasksViewModel @Inject constructor(
     private val addTaskUseCase: AddTaskUseCase,
-    getTaskUseCase: GetTaskUseCase,
     private val updateTaskUseCase: UpdateTaskUseCase,
+    private val deleteTaskUseCase: DeleteTaskUseCase,
+    getTaskUseCase: GetTaskUseCase,
 ) :ViewModel(){
 
     //region Fields
@@ -68,7 +70,7 @@ class TasksViewModel @Inject constructor(
 
     fun onRemoveIteM(taskModel: TaskModel) {
         viewModelScope.launch {
-            updateTaskUseCase(taskModel)
+            deleteTaskUseCase(taskModel)
         }
     }
 
